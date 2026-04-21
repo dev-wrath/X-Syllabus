@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User's overall progress and streak info",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "streak": { "type": "number" },
+        "lastActiveDate": { "type": "string", "format": "date" },
+        "totalCompletion": { "type": "number" }
+      },
+      "required": ["uid", "email"]
+    },
+    "TopicProgress": {
+      "title": "Topic Progress",
+      "description": "Individual progress for a specific syllabus topic",
+      "type": "object",
+      "properties": {
+        "topicId": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "lectures": { "type": "boolean" },
+        "notes": { "type": "boolean" },
+        "pyqs": { "type": "boolean" },
+        "sliderValue": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["topicId", "subjectId"]
+    },
+    "DailyLog": {
+      "title": "Daily Activity Log",
+      "description": "Summary of topics completed on a specific day",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date" },
+        "topicsCompleted": { "type": "array" },
+        "durationMinutes": { "type": "number" }
+      },
+      "required": ["date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile and meta stats"
+    },
+    "/users/{userId}/progress/{topicId}": {
+      "schema": "TopicProgress",
+      "description": "User specific progress for each syllabus topic"
+    },
+    "/users/{userId}/logs/{logId}": {
+      "schema": "DailyLog",
+      "description": "Daily study logs"
+    }
+  }
+}

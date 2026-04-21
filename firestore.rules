@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // 1. User Profile Rules
+    match /users/{userId} {
+      function isValidUser(data) {
+        return data.uid == request.auth.uid 
+          && data.email is string 
+          && data.email.size() > 0 
+          && (data.totalCompletion is number || !data.keys().hasAny(['totalCompletion']))
+          && (data.streak is number || !data.keys().hasAny(['streak']));
+      }
+
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasAny(['displayName', 'photoURL', 'streak', 'lastActiveDate', 'totalCompletion']);
+    }
+
+    // 2. Topic Progress Rules
+    match /users/{userId}/progress/{topicId} {
+      function isValidProgress(data) {
+        return data.topicId is string 
+          && data.subjectId is string 
+          && data.lectures is bool 
+          && data.notes is bool 
+          && data.pyqs is bool
+          && (data.sliderValue is number && data.sliderValue >= 0 && data.sliderValue <= 100);
+      }
+
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidProgress(request.resource.data);
+      allow update: if isOwner(userId) && isValidProgress(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasAny(['lectures', 'notes', 'pyqs', 'sliderValue', 'updatedAt']);
+    }
+
+    // 3. Daily Logs Rules
+    match /users/{userId}/logs/{logId} {
+      function isValidLog(data) {
+        return data.date is string && data.date.size() <= 64;
+      }
+
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidLog(request.resource.data);
+      allow delete: if isOwner(userId);
+    }
+
+    // 4. Custom Syllabus Rules
+    match /users/{userId}/customSyllabus/{subtopicId} {
+      function isValidCustomTopic(data) {
+        return data.id is string 
+          && data.name is string && data.name.size() > 0 && data.name.size() < 200
+          && data.subjectId is string
+          && data.parentTopicId is string;
+      }
+
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidCustomTopic(request.resource.data);
+      allow update: if isOwner(userId) && isValidCustomTopic(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']);
+      allow delete: if isOwner(userId);
+    }
+  }
+}

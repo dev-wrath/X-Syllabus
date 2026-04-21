@@ -1,0 +1,6 @@
+{
+  "name": "SSC CGL Prep Tracker",
+  "description": "A modern, mobile-first web app for tracking SSC CGL exam preparation with real-time visual progress, topic-wise completion heatmap, and streak tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
